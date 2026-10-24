@@ -1,0 +1,43 @@
+{
+  "name": "bulk-mockup",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bulk Mockup — a Photoshop CEP panel that batch-replaces a Smart Object with every JPG/PNG in a folder, with live progress, logs and reports.",
+  "keywords": [
+    "photoshop",
+    "cep-extension",
+    "extendscript",
+    "smart-object",
+    "mockup",
+    "batch",
+    "automation"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test tools/test-engine.mjs",
+    "check:panel": "node tools/check-panel.mjs",
+    "build": "node tools/build-standalone.mjs",
+    "preview": "node tools/preview/serve.mjs",
+    "preview:shot": "node tools/preview/make-shot.mjs",
+    "brand": "python tools/make_logo.py",
+    "vendor:csinterface": "node tools/vendor-csinterface.mjs",
+    "verify": "npm run check:panel && npm test && npm run build",
+    "pack": "node tools/pack-zxp.mjs"
+  },
+  "files": [
+    "CSXS",
+    "client",
+    "jsx",
+    "assets",
+    "docs",
+    "install.bat",
+    "install.sh",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ]
+}

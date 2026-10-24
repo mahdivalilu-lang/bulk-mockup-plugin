@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Bulk Mockup — CEP extension manifest.
+
+    Two things are worth knowing before editing this file:
+
+    1. `ExtensionBundleId` is the identity Photoshop remembers. Changing it
+       after release orphans users' saved panel position and any ZXP update
+       chain, so it is deliberately pinned.
+
+    2. `ScriptPath` is evaluated by Photoshop once, the first time the panel is
+       shown. CEP reads the file and evaluates its *contents* as a script
+       string, so this entry point must be self-contained: relative
+       `#include`s cannot resolve there. `jsx/engine.jsx` is generated from
+       the `#include` tree by `npm run build`; edit the modules, not the
+       generated file.
+
+    Compatibility: Photoshop CC 2019 (20.0) and later, which ship CEP 9+.
+    The host range starts at 16.0 so the manifest also advertises the older
+    hosts; RequiredRuntime is the real gate, because Photoshop CC 2015-2018
+    (16.0-19.x) ship CEP 6-8. The panel has CSS fallbacks for CEP 9/10
+    (Chromium 61/74), where flexbox `gap` is not available.
+
+    `Version` is the manifest schema/parser version, not the CEP version:
+    7.0 is the newest schema the older runtimes understand and is still
+    accepted by current CEP builds.
+-->
+<ExtensionManifest
+    Version="7.0"
+    ExtensionBundleId="com.bulkmockup.panel"
+    ExtensionBundleVersion="1.0.0"
+    ExtensionBundleName="Bulk Mockup"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <ExtensionList>
+        <Extension Id="com.bulkmockup.panel.main" Version="1.0.0" />
+    </ExtensionList>
+
+    <ExecutionEnvironment>
+        <HostList>
+            <!-- PHXS = Photoshop, PHSP = Photoshop (Product), both are official. -->
+            <Host Name="PHXS" Version="[16.0,99.9]" />
+            <Host Name="PHSP" Version="[16.0,99.9]" />
+        </HostList>
+        <LocaleList>
+            <Locale Code="All" />
+        </LocaleList>
+        <RequiredRuntimeList>
+            <RequiredRuntime Name="CSXS" Version="9.0" />
+        </RequiredRuntimeList>
+    </ExecutionEnvironment>
+
+    <DispatchInfoList>
+        <Extension Id="com.bulkmockup.panel.main">
+            <DispatchInfo>
+                <Resources>
+                    <MainPath>./client/index.html</MainPath>
+                    <ScriptPath>./jsx/engine.jsx</ScriptPath>
+                    <CEFCommandLine>
+                        <!-- Node is used only to verify the cancellation sentinel file. -->
+                        <Parameter>--enable-nodejs</Parameter>
+                        <Parameter>--allow-file-access</Parameter>
+                        <Parameter>--allow-file-access-from-files</Parameter>
+                    </CEFCommandLine>
+                </Resources>
+
+                <Lifecycle>
+                    <AutoVisible>true</AutoVisible>
+                </Lifecycle>
+
+                <UI>
+                    <Type>Panel</Type>
+                    <Menu>Bulk Mockup</Menu>
+                    <Geometry>
+                        <Size>
+                            <Width>400</Width>
+                            <Height>720</Height>
+                        </Size>
+                        <MinSize>
+                            <Width>320</Width>
+                            <Height>420</Height>
+                        </MinSize>
+                        <MaxSize>
+                            <Width>2400</Width>
+                            <Height>2400</Height>
+                        </MaxSize>
+                    </Geometry>
+                    <Icons>
+                        <Icon Type="Normal">./assets/icon.png</Icon>
+                    </Icons>
+                </UI>
+            </DispatchInfo>
+        </Extension>
+    </DispatchInfoList>
+</ExtensionManifest>

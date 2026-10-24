@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Bulk Mockup — panel preview</title>
+<style>
+    body { margin: 0; background: #101014; font: 12px "Segoe UI", system-ui, sans-serif; color: #888; }
+    #frame { width: 400px; height: 780px; border: 0; display: block; background: #1b1b1f; }
+    .note { padding: 8px 10px; font-size: 11px; max-width: 380px; }
+    code { color: #bbb; }
+</style>
+</head>
+<body>
+<!--
+  Panel preview harness.
+
+  Loads the *real* client/index.html into an iframe with three substitutions:
+    * client/lib/CSInterface.js  ->  tools/preview/mock-cep.js  (a fake CEP runtime)
+    * every relative path is rebased to the server root
+    * a <base href="/"> is injected, because `srcdoc` documents inherit the
+      parent's base URL and would otherwise resolve the panel's own scripts
+      against the wrong directory
+
+  Nothing here ships with the extension. It exists so the panel can be built and
+  inspected without launching Photoshop, and so README screenshots can be
+  regenerated reproducibly.
+
+  Run with:  npm run preview
+-->
+<iframe id="frame" title="Bulk Mockup panel preview"></iframe>
+<div class="note" id="note">
+    Preview of the real panel at 400×780 (the manifest's default size).
+    Drive it from the console: <code>__populate()</code> then <code>__stream()</code>.
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    var frame = document.getElementById('frame');
+    var note = document.getElementById('note');
+
+    // Reachable from DevTools so the preview can be scripted by hand.
+    window.panelWindow = function () { return frame.contentWindow; };
+    window.__populate = function () { return frame.contentWindow.__populate(); };
+    window.__stream = function () { return frame.contentWindow.__stream(); };
+    window.__emit = function (payload) { return frame.contentWindow.__emit(payload); };
+
+    fetch('/client/index.html')
+        .then(function (response) {
+            if (!response.ok) { throw new Error('HTTP ' + response.status); }
+            return response.text();
+        })
+        .then(function (html) {
+            var patched = html
+                // Rebase everything onto the server root, which is the repo root.
+                .replace('<head>', '<head>\n<base href="/" />')
+                .replace('src="lib/CSInterface.js"', 'src="tools/preview/mock-cep.js"')
+                .replace(/(src|href)="css\//g, '$1="client/css/')
+                .replace(/(src|href)="js\//g, '$1="client/js/')
+                .replace(/src="\.\.\/assets\//g, 'src="assets/')
+                // A real Photoshop panel is 400x780, not a browser window.
+                .replace('</head>',
+                    '<style>html,body{width:400px;height:780px;overflow:hidden;}main{overflow-y:auto;}</style></head>');
+
+            frame.addEventListener('load', function onLoad() {
+                frame.removeEventListener('load', onLoad);
+                note.innerHTML = 'Preview ready. Drive it from the console: ' +
+                    '<code>__populate()</code> then <code>__stream()</code>.';
+            });
+
+            frame.srcdoc = patched;
+        })
+        .catch(function (error) {
+            note.textContent = 'Could not load the panel: ' + error.message +
+                ' — start the server first with `npm run preview`.';
+        });
+}());
+</script>
+</body>
+</html>

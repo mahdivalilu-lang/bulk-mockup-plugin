@@ -1,0 +1,743 @@
+/* ==========================================================================
+   Bulk Mockup — panel theme (CEP 9 / 10 / 11+)
+   --------------------------------------------------------------------------
+   This stylesheet is deliberately primitive. It is designed to survive old
+   CEF builds (Chromium 61+) and to give the host as little work as possible:
+
+     * block flow for all content; a single flex column only for the shell
+     * table layout for the few horizontal rows and the 2/4 column groups
+     * no CSS grid, no `gap`, no `calc()`, no viewport units
+     * no transitions, animations, transforms, filters or will-change
+     * no fixed/sticky overlays; notices and toasts are normal in-flow boxes
+     * collapsed OPTIONS content is display:none and completely inert
+
+   Every colour is a token so the panel can be re-themed from this one block.
+   ========================================================================== */
+
+/* --------------------------------------------------------------- design tokens */
+
+:root {
+    --bg:            #1b1b1f;
+    --bg-raised:     #24242a;
+    --bg-inset:      #141418;
+    --bg-hover:      #2c2c34;
+    --border:        #35353d;
+    --border-strong: #45454f;
+
+    --text:          #e8e8ec;
+    --text-muted:    #9a9aa6;
+    --text-faint:    #6f6f7c;
+
+    --accent:        #4d8df6;
+    --accent-hover:  #6199f8;
+    --accent-press:  #3c7ae0;
+    --accent-soft:   rgba(77, 141, 246, 0.14);
+
+    --ok:            #46b97a;
+    --ok-soft:       rgba(70, 185, 122, 0.14);
+    --warn:          #e0a33c;
+    --warn-soft:     rgba(224, 163, 60, 0.14);
+    --error:         #e5605c;
+    --error-soft:    rgba(229, 96, 92, 0.14);
+
+    --radius:        6px;
+    --radius-sm:     4px;
+    --pad:           12px;
+
+    --mono: "Cascadia Mono", "Consolas", "SF Mono", "Menlo", "DejaVu Sans Mono", monospace;
+    --sans: "Segoe UI", -apple-system, "Helvetica Neue", "Inter", system-ui, sans-serif;
+}
+
+/* ------------------------------------------------------------------- reset */
+
+* { box-sizing: border-box; }
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/*
+ * The shell is the only flex container in the panel. It is a single,
+ * non-wrapping column whose only job is to keep the header, scroll area,
+ * status line and footer in order. No `gap`: spacing comes from margins.
+ */
+body {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+    background: var(--bg);
+    color: var(--text);
+    font: 12px/1.45 var(--sans);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    user-select: none;
+}
+
+header,
+.status-line,
+footer.panel-footer {
+    -webkit-flex: 0 0 auto;
+    flex: 0 0 auto;
+}
+
+main {
+    -webkit-flex: 1 1 auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: var(--pad);
+}
+
+/* Vertical rhythm for everything inside the scroll area. */
+main > * + * { margin-top: 10px; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg-inset); }
+::-webkit-scrollbar-thumb { background: #3a3a44; border-radius: 5px; border: 2px solid var(--bg-inset); }
+::-webkit-scrollbar-thumb:hover { background: #4a4a56; }
+
+/* ------------------------------------------------------------------ header */
+
+header {
+    position: relative;
+    min-height: 54px;
+    padding: 10px var(--pad);
+    background: #23232a;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.logo-chip {
+    float: left;
+    width: 34px;
+    height: 34px;
+    padding-top: 5px;
+    text-align: center;
+    background: #f4f4f6;
+    border-radius: 8px;
+}
+
+.logo-chip img {
+    width: 24px;
+    height: 24px;
+    display: block;
+    margin: 0 auto;
+    image-rendering: -webkit-optimize-contrast;
+}
+
+.brand {
+    margin-left: 44px;
+    margin-right: 96px;
+    min-width: 0;
+}
+
+.brand h1 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.brand p {
+    margin: 1px 0 0;
+    font-size: 10.5px;
+    color: var(--text-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ------------------------------------------------------------------- pills */
+
+.pill {
+    position: absolute;
+    right: var(--pad);
+    top: 17px;
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    background: var(--bg-hover);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+.pill::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 5px;
+    vertical-align: 1px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.pill[data-state="idle"]    { color: var(--text-faint); }
+.pill[data-state="ready"]   { color: var(--ok); background: var(--ok-soft); border-color: transparent; }
+.pill[data-state="running"] { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
+.pill[data-state="paused"]  { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
+.pill[data-state="done"]    { color: var(--ok); background: var(--ok-soft); border-color: transparent; }
+.pill[data-state="error"]   { color: var(--error); background: var(--error-soft); border-color: transparent; }
+
+/* ------------------------------------------------------------------ banner */
+
+.banner {
+    padding: 9px 10px;
+    border-radius: var(--radius);
+    font-size: 11.5px;
+    background: var(--warn-soft);
+    color: #f0cf95;
+    border: 1px solid rgba(224, 163, 60, 0.35);
+}
+
+.banner[data-level="error"] {
+    background: var(--error-soft);
+    color: #f0b3b1;
+    border-color: rgba(229, 96, 92, 0.35);
+}
+
+/* ------------------------------------------------------------------- cards */
+
+.card {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px;
+}
+
+.card > * + * { margin-top: 8px; }
+
+.card > h2 {
+    margin: 0;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+    color: var(--text-faint);
+}
+
+.card > h2 .step {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    margin-right: 6px;
+    vertical-align: 1px;
+    line-height: 15px;
+    text-align: center;
+    border-radius: 50%;
+    background: var(--bg-hover);
+    color: var(--text-muted);
+    font-size: 9.5px;
+    letter-spacing: 0;
+}
+
+.field { min-width: 0; }
+.field > * + * { margin-top: 4px; }
+.field > label { display: block; font-size: 10.5px; color: var(--text-muted); }
+
+/*
+ * Horizontal groups use table layout. It is supported by every CEF build,
+ * needs no measurement, and cannot wrap unexpectedly like inline-blocks.
+ */
+.row {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+
+.row > .cell {
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.row > .cell + .cell { padding-left: 6px; }
+.row > .cell.grow { width: auto; }
+.row > .cell.fixed { width: 1%; white-space: nowrap; }
+.row > .cell.fixed input[type="checkbox"] { width: 16px; padding: 0; }
+
+.grid-2 {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+
+.grid-2 > * {
+    display: table-cell;
+    width: 50%;
+    vertical-align: top;
+}
+
+.grid-2 > * + * { padding-left: 8px; }
+
+/* ---------------------------------------------------------------- controls */
+
+input[type="text"],
+input[type="number"],
+select {
+    width: 100%;
+    padding: 6px 8px;
+    font: inherit;
+    color: var(--text);
+    background: var(--bg-inset);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    outline: none;
+}
+
+input[type="text"]::placeholder { color: var(--text-faint); }
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus {
+    border-color: var(--accent);
+    outline: 1px solid var(--accent);
+}
+
+input:disabled,
+select:disabled,
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+input[readonly] {
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 11px;
+}
+
+select option { background: var(--bg-inset); color: var(--text); }
+
+label.check {
+    position: relative;
+    display: block;
+    padding-left: 21px;
+    font-size: 11.5px;
+    color: var(--text);
+    cursor: pointer;
+}
+
+label.check input[type="checkbox"] {
+    position: absolute;
+    left: 0;
+    top: 2px;
+    margin: 0;
+    cursor: pointer;
+}
+
+label.check span.hint {
+    display: block;
+    margin-top: 1px;
+    color: var(--text-faint);
+    font-size: 10.5px;
+}
+
+input[type="range"] {
+    width: 100%;
+    background: transparent;
+}
+
+/* ------------------------------------------------------------------ buttons */
+
+button {
+    display: inline-block;
+    padding: 6px 11px;
+    font: inherit;
+    font-weight: 500;
+    text-align: center;
+    vertical-align: middle;
+    color: var(--text);
+    background: var(--bg-hover);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+button:hover:not(:disabled) { background: #33333d; border-color: #55555f; }
+button:active:not(:disabled) { background: #3a3a45; }
+button:focus { outline: 1px solid var(--accent); outline-offset: 1px; }
+
+button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+}
+button.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+button.primary:active:not(:disabled) { background: var(--accent-press); }
+
+button.danger { background: transparent; border-color: rgba(229, 96, 92, 0.5); color: #f0a5a3; }
+button.danger:hover:not(:disabled) { background: var(--error-soft); border-color: var(--error); }
+
+button.ghost { background: transparent; border-color: var(--border); color: var(--text-muted); }
+button.ghost:hover:not(:disabled) { color: var(--text); background: var(--bg-hover); }
+
+button.tiny { padding: 3px 7px; font-size: 10.5px; }
+
+button svg {
+    width: 13px;
+    height: 13px;
+    margin-right: 5px;
+    vertical-align: -2px;
+}
+
+.actions { display: block; }
+.actions > * + * { margin-left: 8px; }
+.actions button.primary { min-width: 120px; }
+
+/* ---------------------------------------------------------------- checklist */
+
+.check-line {
+    position: relative;
+    padding-left: 21px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.check-line + .check-line { margin-top: 4px; }
+
+.check-line .dot {
+    position: absolute;
+    left: 0;
+    top: 1px;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
+    text-align: center;
+    border-radius: 50%;
+    font-size: 9px;
+    font-weight: 700;
+    background: var(--bg-hover);
+    color: var(--text-faint);
+}
+
+.check-line[data-status="ok"] .dot    { background: var(--ok-soft);    color: var(--ok); }
+.check-line[data-status="warn"] .dot  { background: var(--warn-soft);  color: var(--warn); }
+.check-line[data-status="error"] .dot { background: var(--error-soft); color: var(--error); }
+
+.check-line[data-status="error"] { color: #f0b3b1; }
+.check-line strong { color: var(--text); font-weight: 600; }
+
+.check-line .detail {
+    display: block;
+    color: var(--text-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+    word-break: break-all;
+}
+
+/* ----------------------------------------------------------------- progress */
+
+.progress-head { font-size: 11px; }
+
+.progress-head .file {
+    display: block;
+    margin-right: 48px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: var(--mono);
+    font-size: 10.5px;
+}
+
+.progress-head .percent {
+    float: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.track {
+    position: relative;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--bg-inset);
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+.track > .fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    border-radius: 3px;
+    background: var(--accent);
+}
+
+/* Indeterminate is a static bar, never a continuous animation. */
+.track.indeterminate > .fill {
+    width: 35%;
+    background: var(--text-faint);
+}
+
+.stats {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+    border-spacing: 6px 0;
+    text-align: center;
+}
+
+.stat {
+    display: table-cell;
+    width: 25%;
+    background: var(--bg-inset);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 5px 4px;
+}
+
+.stat b {
+    display: block;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+}
+
+.stat span {
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-faint);
+}
+
+.stat[data-kind="ok"] b { color: var(--ok); }
+.stat[data-kind="fail"] b { color: var(--error); }
+.stat[data-kind="remaining"] b { color: var(--text-muted); }
+
+/* ---------------------------------------------------------------------- log */
+
+.log-head {
+    font-size: 10.5px;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    font-weight: 700;
+    overflow: hidden;
+}
+
+.log-head label {
+    float: right;
+    padding-left: 8px;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 400;
+}
+
+#log {
+    height: 168px;
+    overflow-y: auto;
+    padding: 7px 8px;
+    background: var(--bg-inset);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    line-height: 1.55;
+    user-select: text;
+    cursor: text;
+}
+
+.log-line {
+    position: relative;
+    padding-left: 58px;
+}
+
+.log-line .t {
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--text-faint);
+}
+
+.log-line .m {
+    display: inline;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.log-line[data-level="debug"]   .m { color: var(--text-faint); }
+.log-line[data-level="info"]    .m { color: var(--text-muted); }
+.log-line[data-level="success"] .m { color: var(--ok); }
+.log-line[data-level="warn"]    .m { color: var(--warn); }
+.log-line[data-level="error"]   .m { color: var(--error); }
+
+.log-empty { color: var(--text-faint); font-style: italic; }
+
+/* --------------------------------------------------------------- collapsible */
+
+/*
+ * OPTIONS is a JS-managed section, never a native <details>/<summary>.
+ * Collapsed content is display:none (plus the `hidden` attribute), so its
+ * controls are inert and take part in no layout or paint work. Expanded
+ * content is a plain block. There is no height, opacity or transform state.
+ */
+.options-card { display: block; }
+
+.options-card .collapsible-header {
+    cursor: pointer;
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    user-select: none;
+    outline: none;
+}
+
+.collapsible-header::before {
+    content: "";
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border-left: 5px solid currentColor;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+.options-card.expanded .collapsible-header::before {
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid currentColor;
+    border-bottom: 0;
+}
+
+.collapsible-header:focus { color: var(--text-muted); }
+
+#optionsBody {
+    display: none;
+    margin-top: 8px;
+}
+
+.options-card.expanded #optionsBody { display: block; }
+
+.collapsible-body > * + * { margin-top: 10px; }
+
+.fieldset {
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+}
+
+.fieldset + .fieldset { margin-top: 10px; }
+.fieldset > * + * { margin-top: 8px; }
+.fieldset:first-of-type { border-top: 0; padding-top: 0; }
+
+.legend {
+    display: block;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--text-faint);
+}
+
+/* ------------------------------------------------------- notices and status */
+
+/*
+ * Notices are ordinary cards at the top of the scroll area. There is no
+ * backdrop, no overlay, no focus trap and no fixed positioning, so opening
+ * one cannot create a composited layer or an extra layout tree.
+ */
+#modal { border-color: var(--border-strong); }
+
+#modal > h2 {
+    color: var(--text);
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+#modalBody p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 11.5px;
+}
+
+#modalBody > * + * { margin-top: 8px; }
+
+#modalBody ul {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+#modalBody code {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text);
+    word-break: break-all;
+}
+
+.notice-actions { text-align: right; }
+
+/*
+ * A toast is a single in-flow status line above the footer. It is not an
+ * overlay: no fixed positioning, no stacking context, no entrance animation.
+ */
+.status-line {
+    padding: 7px var(--pad);
+    font-size: 11.5px;
+    background: #2e2e37;
+    border-top: 1px solid var(--border-strong);
+    color: var(--text-muted);
+}
+
+.status-line[data-level="success"] { background: #1e3529; border-color: rgba(70, 185, 122, 0.5); color: #a8e6c4; }
+.status-line[data-level="warn"]    { background: #37301c; border-color: rgba(224, 163, 60, 0.5); color: #f0d69b; }
+.status-line[data-level="error"]   { background: #3a2020; border-color: rgba(229, 96, 92, 0.55); color: #f3bcba; }
+
+/* ------------------------------------------------------------------ footer */
+
+footer.panel-footer {
+    padding: 7px var(--pad);
+    border-top: 1px solid var(--border);
+    background: #1e1e24;
+    font-size: 10.5px;
+    color: var(--text-faint);
+    overflow: hidden;
+}
+
+#footerVersion { float: left; }
+#aboutLink { float: right; color: var(--text-faint); text-decoration: none; cursor: pointer; }
+#aboutLink:hover { color: var(--text); }
+
+/* --------------------------------------------------------------- utilities */
+
+.muted { color: var(--text-muted); }
+.faint { color: var(--text-faint); }
+.tabular { font-variant-numeric: tabular-nums; }
+[hidden] { display: none !important; }
+
+/* A docked-very-narrow panel stacks the two-column groups. */
+@media (max-width: 340px) {
+    .grid-2,
+    .grid-2 > * {
+        display: block;
+        width: 100%;
+    }
+    .grid-2 > * + * {
+        padding-left: 0;
+        margin-top: 8px;
+    }
+}
